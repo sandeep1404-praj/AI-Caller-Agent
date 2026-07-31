@@ -1,0 +1,111 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+.env.local
+.env.*
+
+# Keep the example file
+!.env.example
+
+# ==========================
+# IDE
+# ==========================
+.vscode/
+.idea/
+*.code-workspace
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+
+# ==========================
+# Database
+# ==========================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================
+# Audio Files
+# ==========================
+*.wav
+*.mp3
+*.ogg
+
+# Temporary audio folder
+temp/
+tmp/
+audio_temp/
+
+# ==========================
+# Excel
+# ==========================
+
+# Ignore generated files
+data/generated/
+data/output/
+
+# Keep sample data
+!data/sample_teachers.xlsx
+
+# ==========================
+# Cache
+# ==========================
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ==========================
+# Build
+# ==========================
+build/
+dist/
+*.egg-info/
+
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Testing
+# ==========================
+.coverage
+htmlcov/
+
+# ==========================
+# Runtime
+# ==========================
+*.pid
+*.lock
+
+# ==========================
+# Secret Keys
+# ==========================
+credentials.json
+service_account.json
+google_credentials.json
+
+# ==========================
+# Gemini
+# ==========================
+gemini_key.txt
+api_keys.json

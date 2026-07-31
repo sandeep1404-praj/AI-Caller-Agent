@@ -1,0 +1,35 @@
+# Core
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+
+# Database
+sqlalchemy>=2.0.36
+
+# AI
+google-genai>=1.0.0
+
+# Speech — recording, playback, TTS (no PyAudio/pyttsx3)
+SpeechRecognition>=3.11.0
+sounddevice>=0.5.0
+soundfile>=0.12.1
+scipy>=1.14.0
+numpy>=1.26.0
+edge-tts>=6.1.0
+pygame>=2.6.0
+miniaudio>=1.61
+
+# Excel
+openpyxl>=3.1.5
+
+# Scheduler
+APScheduler>=3.10.4
+
+# Testing
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+httpx>=0.27.0
+
+# Utilities
+python-dotenv>=1.0.1
