@@ -7,6 +7,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 
 from config import get_settings
+from excel.export_excel import ExcelExporter
 from models import CallQueue, CallState, ConfirmationStatus, Lecture, QueueStatus
 from providers.call_provider import CallContext, CallProvider, CallResultStatus
 from providers.factory import get_call_provider
@@ -125,6 +126,8 @@ class ConfirmationService:
             )
             self.logging_service.write_file_log(call_log)
             self.db.commit()
+
+            self._export_excel_snapshot()
             return result.status == CallResultStatus.SUCCESS
 
         except Exception as exc:
@@ -137,6 +140,7 @@ class ConfirmationService:
                 errors=str(exc),
             )
             self.db.commit()
+            self._export_excel_snapshot()
             return False
 
     async def execute_call_for_teacher(self, teacher_id: str) -> bool:
@@ -226,3 +230,10 @@ class ConfirmationService:
             return loop.run_until_complete(coro)
         except RuntimeError:
             return asyncio.run(coro)
+
+    def _export_excel_snapshot(self) -> None:
+        """Best-effort Excel refresh so workbook stays in sync with the database."""
+        try:
+            ExcelExporter(self.db).export_file()
+        except Exception as exc:
+            logger.exception("Excel export refresh failed: %s", exc)

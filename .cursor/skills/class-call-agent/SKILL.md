@@ -7,7 +7,6 @@ description: >-
   retry logic, Gemini prompts, speech modules, API routes, Excel import/export,
   or adding telephony provider. Read this skill first before exploring the codebase.
 ---
-
 # Class Call Agent — Project Context
 
 **Read this skill before exploring the codebase.** It contains architecture, flows, conventions, and file responsibilities.
@@ -96,20 +95,20 @@ from providers.factory import get_call_provider
 
 ## Key Files — What to Edit For Common Tasks
 
-| Task | Edit these files |
-|------|------------------|
-| Add/change API endpoint | `api/routes.py`, `api/schemas.py` |
-| Change business/call flow | `services/confirmation_service.py` |
-| Retry rules | `services/retry_service.py`, `config.py` |
-| Gemini prompts / JSON schema | `ai/prompt_manager.py`, `ai/gemini_client.py` |
-| Conversation state machine | `ai/conversation_manager.py`, `providers/desktop_call_provider.py` |
-| Change speech / mic / TTS | `speech/audio_manager.py`, `speech/audio_player.py`, `speech/speech_to_text.py`, `speech/text_to_speech.py` |
-| Scheduler timing | `scheduler.py`, `config.py` |
-| Excel columns | `excel/import_excel.py`, `excel/export_excel.py` |
-| DB schema | `models.py` → run init or migration |
-| Add telephony | `providers/future_telephony_provider.py` only + `.env` |
-| Env / settings | `config.py`, `.env` |
-| CLI commands | `main.py` |
+| Task                         | Edit these files                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Add/change API endpoint      | `api/routes.py`, `api/schemas.py`                                                                               |
+| Change business/call flow    | `services/confirmation_service.py`                                                                                |
+| Retry rules                  | `services/retry_service.py`, `config.py`                                                                        |
+| Gemini prompts / JSON schema | `ai/prompt_manager.py`, `ai/gemini_client.py`                                                                   |
+| Conversation state machine   | `ai/conversation_manager.py`, `providers/desktop_call_provider.py`                                              |
+| Change speech / mic / TTS    | `speech/audio_manager.py`, `speech/audio_player.py`, `speech/speech_to_text.py`, `speech/text_to_speech.py` |
+| Scheduler timing             | `scheduler.py`, `config.py`                                                                                     |
+| Excel columns                | `excel/import_excel.py`, `excel/export_excel.py`                                                                |
+| DB schema                    | `models.py` → run init or migration                                                                              |
+| Add telephony                | `providers/future_telephony_provider.py` only + `.env`                                                          |
+| Env / settings               | `config.py`, `.env`                                                                                             |
+| CLI commands                 | `main.py`                                                                                                         |
 
 ---
 
@@ -173,14 +172,14 @@ If teacher says "late" → ask delay minutes → set `conversation_finished: tru
 
 **Path:** `data/caller_agent.db` (via `config.resolved_database_url`)
 
-| Table | Purpose |
-|-------|---------|
-| `teachers` | Faculty info (teacher_id, name, phone, department) |
-| `lectures` | Schedule + confirmation fields (status, retry_count, transcript, etc.) |
-| `call_queue` | Pending call jobs from daily scheduler |
-| `retry_queue` | Scheduled retries with next_retry_time |
-| `call_logs` | Full call records (duration, transcript, errors, summary) |
-| `conversation_history` | Turn-by-turn messages per call |
+| Table                    | Purpose                                                                |
+| ------------------------ | ---------------------------------------------------------------------- |
+| `teachers`             | Faculty info (teacher_id, name, phone, department)                     |
+| `lectures`             | Schedule + confirmation fields (status, retry_count, transcript, etc.) |
+| `call_queue`           | Pending call jobs from daily scheduler                                 |
+| `retry_queue`          | Scheduled retries with next_retry_time                                 |
+| `call_logs`            | Full call records (duration, transcript, errors, summary)              |
+| `conversation_history` | Turn-by-turn messages per call                                         |
 
 **ORM:** SQLAlchemy 2.0 in `models.py`. Init: `python main.py init` or `database.init_db()`.
 
@@ -190,11 +189,11 @@ If teacher says "late" → ask delay minutes → set `conversation_finished: tru
 
 Triggered on: no response, STT failure, Gemini error, timeout, mic disconnect.
 
-| Setting | Default |
-|---------|---------|
-| `MAX_RETRIES` | 3 |
-| `RETRY_DELAY_MINUTES` | 10 |
-| `CALL_TIMEOUT_SECONDS` | 120 |
+| Setting                  | Default |
+| ------------------------ | ------- |
+| `MAX_RETRIES`          | 3       |
+| `RETRY_DELAY_MINUTES`  | 10      |
+| `CALL_TIMEOUT_SECONDS` | 120     |
 
 After max retries → status `No Response`, stop retrying.
 
@@ -204,10 +203,10 @@ Implementation: `services/retry_service.py`
 
 ## Scheduler (APScheduler)
 
-| Job | Trigger | Function |
-|-----|---------|----------|
+| Job            | Trigger    | Function                         |
+| -------------- | ---------- | -------------------------------- |
 | Daily schedule | Cron 17:00 | `scheduler.daily_schedule_job` |
-| Retry check | Every 60s | `scheduler.retry_check_job` |
+| Retry check    | Every 60s  | `scheduler.retry_check_job`    |
 
 Started in `app.py` lifespan via `start_scheduler()`.
 
@@ -217,18 +216,18 @@ Started in `app.py` lifespan via `start_scheduler()`.
 
 **Base:** `/api/v1` — routes in `api/routes.py`
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/teachers` | List teachers |
-| GET | `/calls` | All lectures |
-| GET | `/retry` | Pending retries |
-| GET | `/logs` | Call logs |
-| GET | `/status` | System status |
-| GET | `/today`, `/tomorrow` | Lectures by date |
-| POST | `/call/{teacher_id}` | Manual call |
-| POST | `/retry/{teacher_id}` | Manual retry |
-| POST | `/import` | Import Excel |
-| POST | `/schedule/run` | Run daily job now |
+| Method | Path                      | Purpose           |
+| ------ | ------------------------- | ----------------- |
+| GET    | `/teachers`             | List teachers     |
+| GET    | `/calls`                | All lectures      |
+| GET    | `/retry`                | Pending retries   |
+| GET    | `/logs`                 | Call logs         |
+| GET    | `/status`               | System status     |
+| GET    | `/today`, `/tomorrow` | Lectures by date  |
+| POST   | `/call/{teacher_id}`    | Manual call       |
+| POST   | `/retry/{teacher_id}`   | Manual retry      |
+| POST   | `/import`               | Import Excel      |
+| POST   | `/schedule/run`         | Run daily job now |
 
 **Docs:** `http://localhost:8000/docs`
 
@@ -252,13 +251,13 @@ python main.py run        # Scheduler + API
 
 Key variables — full list in `.env.example`:
 
-| Variable | Purpose |
-|----------|---------|
-| `GEMINI_API_KEY` | Required for AI |
-| `CALL_PROVIDER` | `desktop` or `telephony` |
-| `DAILY_SCHEDULE_HOUR/MINUTE` | Default 17:00 |
-| `MAX_RETRIES`, `RETRY_DELAY_MINUTES` | Retry policy |
-| `EXCEL_FILE_PATH` | `data/lecture_schedule.xlsx` |
+| Variable                                 | Purpose                        |
+| ---------------------------------------- | ------------------------------ |
+| `GEMINI_API_KEY`                       | Required for AI                |
+| `CALL_PROVIDER`                        | `desktop` or `telephony`   |
+| `DAILY_SCHEDULE_HOUR/MINUTE`           | Default 17:00                  |
+| `MAX_RETRIES`, `RETRY_DELAY_MINUTES` | Retry policy                   |
+| `EXCEL_FILE_PATH`                      | `data/lecture_schedule.xlsx` |
 
 Settings class: `config.py` → `get_settings()` (cached).
 
@@ -308,10 +307,10 @@ Active codebase uses the modular structure listed above.
 
 ## Quick Troubleshooting
 
-| Issue | Check |
-|-------|-------|
-| Import errors | Run from project root; imports are root-relative |
-| Gemini fails | `GEMINI_API_KEY` in `.env` |
-| Mic not working | `sounddevice` installed; check `python -c "import sounddevice as sd; print(sd.query_devices())"` |
-| No lectures to call | Excel dates must include tomorrow; run `init` |
-| Scheduler not running | Use `python main.py run`, not `serve` alone |
+| Issue                 | Check                                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| Import errors         | Run from project root; imports are root-relative                                                     |
+| Gemini fails          | `GEMINI_API_KEY` in `.env`                                                                       |
+| Mic not working       | `sounddevice` installed; check `python -c "import sounddevice as sd; print(sd.query_devices())"` |
+| No lectures to call   | Excel dates must include tomorrow; run`init`                                                       |
+| Scheduler not running | Use`python main.py run`, not `serve` alone                                                       |

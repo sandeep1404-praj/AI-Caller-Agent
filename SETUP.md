@@ -8,12 +8,12 @@ Follow these steps to install, configure, and run the project on your machine.
 
 ## 1. Prerequisites
 
-| Requirement | Notes |
-|-------------|-------|
-| **Python 3.12+** | Works on Windows, Linux, and macOS |
-| **Microphone & speakers** | Required for the desktop call simulator |
-| **Internet** | Required for Gemini API, Google STT, and edge-tts |
-| **Gemini API key** | Free key from [Google AI Studio](https://aistudio.google.com/apikey) |
+| Requirement                     | Notes                                                              |
+| ------------------------------- | ------------------------------------------------------------------ |
+| **Python 3.12+**          | Works on Windows, Linux, and macOS                                 |
+| **Microphone & speakers** | Required for the desktop call simulator                            |
+| **Internet**              | Required for Gemini API, Google STT, and edge-tts                  |
+| **Gemini API key**        | Free key from[Google AI Studio](https://aistudio.google.com/apikey) |
 
 Check Python:
 
@@ -84,12 +84,12 @@ GEMINI_API_KEY=your_actual_api_key_here
 
 Other useful defaults (already set in `.env.example`):
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `CALL_PROVIDER` | `desktop` | Use microphone/speaker simulator |
-| `DAILY_SCHEDULE_HOUR` | `17` | Daily job runs at 5:00 PM |
-| `API_PORT` | `8000` | REST API port |
-| `EXCEL_FILE_PATH` | `data/lecture_schedule.xlsx` | Schedule file location |
+| Variable                | Default                        | Purpose                          |
+| ----------------------- | ------------------------------ | -------------------------------- |
+| `CALL_PROVIDER`       | `desktop`                    | Use microphone/speaker simulator |
+| `DAILY_SCHEDULE_HOUR` | `17`                         | Daily job runs at 5:00 PM        |
+| `API_PORT`            | `8000`                       | REST API port                    |
+| `EXCEL_FILE_PATH`     | `data/lecture_schedule.xlsx` | Schedule file location           |
 
 ---
 
@@ -167,15 +167,15 @@ Other sample teacher IDs: `T002`, `T003`, `T004`, `T005`
 
 ## 10. Useful CLI commands
 
-| Command | What it does |
-|---------|--------------|
-| `python main.py init` | Create DB + import Excel |
-| `python main.py import` | Re-import Excel schedule |
-| `python main.py export` | Export confirmations to Excel |
-| `python main.py schedule` | Run the 5 PM job immediately (for testing) |
-| `python main.py call T001` | Call one teacher now |
-| `python main.py serve` | Start API only |
-| `python main.py run` | Start scheduler + API |
+| Command                      | What it does                               |
+| ---------------------------- | ------------------------------------------ |
+| `python main.py init`      | Create DB + import Excel                   |
+| `python main.py import`    | Re-import Excel schedule                   |
+| `python main.py export`    | Export confirmations to Excel              |
+| `python main.py schedule`  | Run the 5 PM job immediately (for testing) |
+| `python main.py call T001` | Call one teacher now                       |
+| `python main.py serve`     | Start API only                             |
+| `python main.py run`       | Start scheduler + API                      |
 
 ---
 
@@ -183,19 +183,19 @@ Other sample teacher IDs: `T002`, `T003`, `T004`, `T005`
 
 Base URL: `http://localhost:8000/api/v1`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/status` | System status |
-| GET | `/teachers` | List teachers |
-| GET | `/tomorrow` | Tomorrow's lectures |
-| GET | `/today` | Today's lectures |
-| GET | `/calls` | All lectures with status |
-| GET | `/retry` | Pending retries |
-| GET | `/logs` | Call logs |
-| POST | `/call/{teacher_id}` | Trigger a call |
-| POST | `/retry/{teacher_id}` | Trigger a retry |
-| POST | `/import` | Import Excel |
-| POST | `/schedule/run` | Run daily schedule now |
+| Method | Endpoint                | Description              |
+| ------ | ----------------------- | ------------------------ |
+| GET    | `/status`             | System status            |
+| GET    | `/teachers`           | List teachers            |
+| GET    | `/tomorrow`           | Tomorrow's lectures      |
+| GET    | `/today`              | Today's lectures         |
+| GET    | `/calls`              | All lectures with status |
+| GET    | `/retry`              | Pending retries          |
+| GET    | `/logs`               | Call logs                |
+| POST   | `/call/{teacher_id}`  | Trigger a call           |
+| POST   | `/retry/{teacher_id}` | Trigger a retry          |
+| POST   | `/import`             | Import Excel             |
+| POST   | `/schedule/run`       | Run daily schedule now   |
 
 **Examples (PowerShell):**
 
@@ -222,10 +222,10 @@ pytest tests/ -v
 
 Once `python main.py run` is active:
 
-| Time | What happens |
-|------|--------------|
-| **5:00 PM daily** | Reads Excel → finds tomorrow's lectures → creates call jobs → calls each teacher |
-| **Every 1 minute** | Checks retry queue and retries failed calls (max 3 retries, 10 min apart) |
+| Time                     | What happens                                                                        |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| **5:00 PM daily**  | Reads Excel → finds tomorrow's lectures → creates call jobs → calls each teacher |
+| **Every 1 minute** | Checks retry queue and retries failed calls (max 3 retries, 10 min apart)           |
 
 After calls complete, confirmation status is written back to Excel via export.
 

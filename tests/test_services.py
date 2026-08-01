@@ -163,6 +163,74 @@ class TestCallProvider:
         assert result.conversation_finished is False
 
 
+class TestConfirmationService:
+    @pytest.mark.asyncio
+    async def test_execute_call_refreshes_excel_export(self, db_session):
+        teacher = TeacherService(db_session).create_or_update(
+            "T100", "Professor Test", "+91-9999999999", "CS"
+        )
+        db_session.commit()
+        lecture = LectureService(db_session).create_or_update(
+            teacher,
+            "DBMS",
+            datetime.now() + timedelta(days=1),
+            "10:00 AM",
+            "Lab-301",
+        )
+        db_session.commit()
+
+        call_provider = MagicMock()
+        call_provider.initiate_call = AsyncMock(
+            return_value=CallResult(
+                status=CallResultStatus.SUCCESS,
+                confirmation_status=ConfirmationStatus.UNAVAILABLE.value,
+                conversation_finished=True,
+                transcript="Teacher: I am not available",
+                reason="Busy",
+            )
+        )
+
+        with patch("services.confirmation_service.ExcelExporter.export_file") as mock_export:
+            from services.confirmation_service import ConfirmationService
+
+            service = ConfirmationService(db_session, call_provider=call_provider)
+            success = await service.execute_call(lecture.id)
+
+        assert success is True
+        mock_export.assert_called_once()
+        updated = LectureService(db_session).get_by_id(lecture.id)
+        assert updated is not None
+        assert updated.confirmation_status == ConfirmationStatus.UNAVAILABLE.value
+        assert updated.reason == "Busy"
+
+
+class TestExcelExporter:
+    def test_export_uses_fallback_when_save_is_locked(self, db_session, tmp_path):
+        from excel.export_excel import ExcelExporter
+
+        teacher = TeacherService(db_session).create_or_update(
+            "T200", "Professor Fallback", "+91-8888888888", "CS"
+        )
+        db_session.commit()
+        LectureService(db_session).create_or_update(
+            teacher,
+            "DBMS",
+            datetime.now() + timedelta(days=1),
+            "10:00 AM",
+            "Lab-301",
+        )
+        db_session.commit()
+
+        exporter = ExcelExporter(db_session)
+        target = tmp_path / "lecture_schedule.xlsx"
+
+        with patch("openpyxl.workbook.workbook.Workbook.save", side_effect=PermissionError("locked")):
+            with patch.object(exporter, "_save_with_excel_com") as mock_fallback:
+                exporter.export_file(target)
+
+        mock_fallback.assert_called_once()
+
+
 class TestProviderFactory:
     def test_desktop_provider_selected(self):
         with patch("providers.factory.get_settings") as mock_settings:

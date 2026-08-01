@@ -68,7 +68,7 @@ Lecture Date: {lecture_date}
 Lecture Time: {lecture_time}
 Room: {room}
 
-Return valid JSON only with all required fields. Never use markdown."""
+Return valid JSON only with all required fields. Never use markdown.""" + JSON_OUTPUT_RULES
 
 SUMMARY_PROMPT = """Summarize this lecture confirmation call in 2-3 sentences.
 
@@ -78,7 +78,8 @@ Transcript:
 Return valid JSON only:
 {{"summary": "your summary here"}}
 
-Never use markdown. Never wrap JSON in code blocks."""
+Never use markdown. Never wrap JSON in code blocks.
+Never explain the JSON. Never add text before or after the JSON object."""
 
 # JSON schemas for structured output via google-genai SDK
 CONVERSATION_JSON_SCHEMA: dict = {

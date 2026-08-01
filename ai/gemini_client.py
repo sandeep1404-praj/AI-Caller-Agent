@@ -125,6 +125,7 @@ class GeminiClient:
                 latency_ms = (time.perf_counter() - start) * 1000
 
                 raw_text = self._extract_text(response)
+                logger.debug("Gemini raw response attempt=%d: %s", attempt, raw_text)
                 logger.info(
                     "Gemini response attempt=%d latency_ms=%.0f raw=%s",
                     attempt,
@@ -149,23 +150,22 @@ class GeminiClient:
                     continue
 
                 validated = self._validate_response(parsed, fallback)
-                logger.info("Gemini parsed JSON attempt=%d: %s", attempt, validated)
+                logger.debug("Gemini parsed JSON attempt=%d: %s", attempt, validated)
                 return validated
 
             except Exception as exc:
                 latency_ms = (time.perf_counter() - start) * 1000
-                last_error = str(exc)
+                last_error = f"{type(exc).__name__}: {exc}"
                 logger.error(
                     "Gemini API error attempt=%d latency_ms=%.0f error=%s",
                     attempt,
                     latency_ms,
                     last_error,
                 )
-                if attempt < MAX_ATTEMPTS and self._is_retryable(exc):
+                if attempt < MAX_ATTEMPTS:
                     self._sleep_backoff(attempt)
                     continue
-                if attempt >= MAX_ATTEMPTS or not self._is_retryable(exc):
-                    break
+                break
 
         logger.error(
             "Gemini request failed after %d attempts, returning fallback. Last error: %s",
@@ -225,22 +225,9 @@ class GeminiClient:
 
         candidates = GeminiClient._json_candidates(text)
         for candidate in candidates:
-            try:
-                result = json.loads(candidate)
-                if isinstance(result, dict):
-                    return result
-            except json.JSONDecodeError:
-                continue
-
-            repaired = GeminiClient._repair_truncated_json(candidate)
-            if repaired:
-                try:
-                    result = json.loads(repaired)
-                    if isinstance(result, dict):
-                        logger.info("Repaired truncated JSON successfully")
-                        return result
-                except json.JSONDecodeError:
-                    pass
+            result = GeminiClient._try_parse_candidate(candidate)
+            if result is not None:
+                return result
 
         logger.warning("All JSON parse attempts failed for text: %s", text[:200])
         return None
@@ -251,17 +238,14 @@ class GeminiClient:
         cleaned = text.strip()
         candidates: list[str] = [cleaned]
 
-        if cleaned.startswith("```"):
-            stripped = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
-            stripped = re.sub(r"\s*```\s*$", "", stripped)
-            candidates.append(stripped.strip())
+        for match in re.finditer(r"```(?:json)?\s*(.*?)\s*```", cleaned, re.IGNORECASE | re.DOTALL):
+            fenced = match.group(1).strip()
+            if fenced:
+                candidates.append(fenced)
 
-        for match in re.finditer(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", cleaned, re.DOTALL):
-            candidates.append(match.group())
-
-        brace_match = re.search(r"\{.*", cleaned, re.DOTALL)
-        if brace_match:
-            candidates.append(brace_match.group())
+        start = GeminiClient._find_json_start(cleaned)
+        if start is not None:
+            candidates.append(cleaned[start:].strip())
 
         seen: set[str] = set()
         unique: list[str] = []
@@ -272,22 +256,103 @@ class GeminiClient:
         return unique
 
     @staticmethod
+    def _find_json_start(text: str) -> int | None:
+        brace_index = text.find("{")
+        bracket_index = text.find("[")
+        if brace_index == -1 and bracket_index == -1:
+            return None
+        if brace_index == -1:
+            return bracket_index
+        if bracket_index == -1:
+            return brace_index
+        return min(brace_index, bracket_index)
+
+    @staticmethod
+    def _try_parse_candidate(candidate: str) -> dict[str, Any] | None:
+        direct = GeminiClient._load_json_object(candidate)
+        if direct is not None:
+            return direct
+
+        repaired = GeminiClient._repair_truncated_json(candidate)
+        if repaired is not None:
+            repaired_result = GeminiClient._load_json_object(repaired)
+            if repaired_result is not None:
+                logger.info("Repaired truncated JSON successfully")
+                return repaired_result
+
+        return None
+
+    @staticmethod
+    def _load_json_object(text: str) -> dict[str, Any] | None:
+        cleaned = text.strip()
+        if not cleaned:
+            return None
+
+        try:
+            loaded = json.loads(cleaned)
+            if isinstance(loaded, dict):
+                return loaded
+        except json.JSONDecodeError:
+            pass
+
+        start = GeminiClient._find_json_start(cleaned)
+        if start is None:
+            return None
+
+        decoder = json.JSONDecoder()
+        try:
+            loaded, _ = decoder.raw_decode(cleaned[start:])
+            if isinstance(loaded, dict):
+                return loaded
+        except json.JSONDecodeError:
+            return None
+
+        return None
+
+    @staticmethod
     def _repair_truncated_json(text: str) -> str | None:
         """Attempt to close truncated JSON objects."""
         stripped = text.strip()
-        if not stripped.startswith("{"):
-            return None
-        if stripped.endswith("}"):
-            return None
-
-        open_braces = stripped.count("{") - stripped.count("}")
-        open_brackets = stripped.count("[") - stripped.count("]")
-        if open_braces <= 0 and open_brackets <= 0:
+        start = GeminiClient._find_json_start(stripped)
+        if start is None:
             return None
 
-        repaired = stripped.rstrip(", \n\r\t")
-        repaired += "]" * max(0, open_brackets)
-        repaired += "}" * max(0, open_braces)
+        snippet = stripped[start:]
+        stack: list[str] = []
+        in_string = False
+        escape = False
+
+        for char in snippet:
+            if in_string:
+                if escape:
+                    escape = False
+                    continue
+                if char == "\\":
+                    escape = True
+                    continue
+                if char == '"':
+                    in_string = False
+                continue
+
+            if char == '"':
+                in_string = True
+            elif char == "{":
+                stack.append("}")
+            elif char == "[":
+                stack.append("]")
+            elif char == "}" and stack and stack[-1] == "}":
+                stack.pop()
+            elif char == "]" and stack and stack[-1] == "]":
+                stack.pop()
+
+        if in_string:
+            return None
+
+        repaired = re.sub(r",\s*([}\]])", r"\1", snippet.rstrip())
+        if not stack:
+            return repaired
+
+        repaired += "".join(reversed(stack))
         return repaired
 
     @staticmethod
@@ -300,13 +365,18 @@ class GeminiClient:
         result = {**base, **data}
 
         if "summary" in base and "reply" not in base:
-            if not result.get("summary"):
-                result["summary"] = base.get("summary", "Summary unavailable.")
+            summary_value = result.get("summary")
+            if not summary_value:
+                summary_value = base.get("summary", "Summary unavailable.")
+            result["summary"] = str(summary_value)
             return result
 
         for key, default in REQUIRED_RESPONSE_DEFAULTS.items():
             if key not in result or result[key] is None:
                 result[key] = default
+
+        for key in ("reply", "status", "reason"):
+            result[key] = str(result.get(key, REQUIRED_RESPONSE_DEFAULTS[key]) or REQUIRED_RESPONSE_DEFAULTS[key])
 
         try:
             result["delay_minutes"] = int(result.get("delay_minutes", 0))

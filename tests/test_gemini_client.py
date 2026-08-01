@@ -100,3 +100,28 @@ class TestGenerateFallback:
 
             assert result["reply"] == "OK"
             assert client.client.models.generate_content.call_count == 2
+
+    def test_generate_returns_fallback_after_invalid_json_retries(self):
+        with patch("ai.gemini_client.get_settings") as mock_settings:
+            mock_settings.return_value.gemini_api_key = "test-key"
+            mock_settings.return_value.gemini_model = "gemini-2.5-flash"
+            mock_settings.return_value.gemini_temperature = 0.3
+            mock_settings.return_value.gemini_max_tokens = 1024
+
+            client = GeminiClient.__new__(GeminiClient)
+            client.settings = mock_settings.return_value
+            client.client = MagicMock()
+
+            bad_response = MagicMock()
+            bad_response.text = "this is not valid json"
+            bad_response.parsed = None
+            bad_response.usage_metadata = None
+
+            client.client.models.generate_content.side_effect = [bad_response, bad_response, bad_response]
+
+            with patch("ai.gemini_client.time.sleep"):
+                result = client._generate("test")
+
+            assert result["reply"] == FALLBACK_RESPONSE["reply"]
+            assert result["status"] == "Unknown"
+            assert client.client.models.generate_content.call_count == 3
